@@ -1,0 +1,60 @@
+language: android
+jdk: oraclejdk8
+sudo: false
+
+android:
+  components:
+    - tools
+    - platform-tools
+    - tools # Second invocation to get the latest SDK tools
+    # The BuildTools version used by your project
+    - build-tools-27.0.3
+    # The SDK version used to compile your project
+    - android-27
+
+    # Additional components
+    - extra-google-android-support
+    - extra-google-google_play_services
+    - extra-google-m2repository
+    - extra-android-m2repository
+    - addon-google_apis-google-${API}
+
+    # Specify at least one system image,
+    # if you need to run emulator(s) during your tests
+    - sys-img-armeabi-v7a-android-27
+
+  licenses:
+    - 'android-sdk-license-.+'
+    - 'android-sdk-preview-license-.+'
+    - 'google-gdk-license-.+'
+
+# Avoid uploading the cache after every build
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+    - $HOME/.android/build-cache
+
+env:
+  global:
+  - API=27 # Android API level default
+  - ABI=armeabi-v7a # ARM ABI v7a by default
+
+install:
+  # Check/list components status
+  - sdkmanager --list || true
+  # Update sdk tools to latest version and install/update components
+  - echo yes | sdkmanager "platforms;android-${API}"
+  # Ensure Gradle wrapper is executable, download wrapper and show version
+  - chmod +x ./gradlew; ls -l gradlew; ./gradlew wrapper -v
+
+script:
+  - ./gradlew clean build -Pbuild=dev jacocoTestReport
+  - ./gradlew test -Pbuild=dev
+# script: ./gradlew connectedAndroidTest -Pbuild=dev
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
